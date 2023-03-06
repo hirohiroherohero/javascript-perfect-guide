@@ -5,9 +5,9 @@
     ```jsx
     1.23; // 숫자 리터럴
     "hello" / // 문자 리터럴
-        pattern / // 정규 표현식 리터럴
-        // 예약어 중에도 기본 표현식이 있다.
-        true; // boolean true로 평가된다.
+    pattern / // 정규 표현식 리터럴
+    // 예약어 중에도 기본 표현식이 있다.
+    true; // boolean true로 평가된다.
     false; // boolean false로 평가된다.
     null; // null로 평가된다.
     this; // 'this' 객체로 평가된다.
