@@ -801,6 +801,6 @@
 
 ## 5.8 자바스크립트 문 요약
 
-![IMG_5049ED6DBD42-1.jpeg](./1.jpeg)
+![IMG_5049ED6DBD42-1.jpeg](./img/1.jpeg)
 
-![IMG_04B2BCB14603-1.jpeg](./2.jpeg)
+![IMG_04B2BCB14603-1.jpeg](./img/2.jpeg)
