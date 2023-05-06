@@ -486,7 +486,6 @@
     ```
 
     - 프로퍼티를 다른 이름의 매개변수로 분해해야 한다면 문법이 복잡해진다.
-
         ```jsx
         function vectorAdd({ x: x1, y: y1 }, { x: x2, y: y2 }) {
             return { x: x1 + x2, y: y1 + y2 };
@@ -494,7 +493,6 @@
 
         vectorAdd({ x: 1, y: 2 }, { x: 3, y: 4 }); // {x:4,y:6}
         ```
-
         - `{ x: 1, y: 2 }` 같은 문법을 분해할 때는 매개변수 이름과 프로퍼티 이름을 잘 구분해야 한다.
             - 분해 할당과 분해 호출에서 선언할 변수 또는 매개변수는 객체 리터럴에서 값이 있는 곳에 있어야한다.
                 - 따라서 프로퍼티 이름은 항상 콜론 왼쪽에있고, 매개변수나 변수 이름은 항상 오른쪽에 있다.
@@ -610,9 +608,7 @@
 1. 코드가 다양한 프로그램에서 정의하는 변수가 다른 프로그램의 변수와 충돌할지 확실히 알 수 없을때
 
     - 해결책은 코드를 함수에 넣고 호출하는 것이다.
-
         - 이렇게 하면 전역에서 사용됐을 변수를 함수의 로컬 변수로 만들 수 있다.
-
         ```jsx
         function chunkNamesapce() {
             // 코드가 여기 존재한다. 코드에서 정의한 변수는 모두 함수의 로컬 변수이므로
@@ -621,16 +617,13 @@
 
         chunkNamesapce(); // 단, 이 함수 호출은 잊지 말아야 한다.
         ```
-
         - 이 코드는 전역에 `chunkNamesapce`라는 함수 이름 하나만 정의한다.
         - 프로퍼티 하나라도 전역에 남겨 두고 싶지 않다면 표현식 하나로 익명 함수를 정의하고 즉시 호출할 수 있다.
-
         ```jsx
         (function () {
             //코드가 여기 존재.
         }); // 함수리터럴을 종료하고 즉시 호출한다.
         ```
-
         - 표현식 하나에서 함수를 정의하고 호출하는 기법은 워낙 널리 사용되므로 ‘즉시 호출하는 함수 표현식(`IIFE`)’이라는 이름도 있다.
         - `function` 앞에 있는 여는 괄호가 없으면 자바스크립트 인터프리터가 `function` 키워드를 함수 선언으로 분석하기 때문에 반드시 필요하다.
             - 괄호가 있으면 인터프리터는 이를 함수 정의 표현식으로 정확히 인식한다.
@@ -809,7 +802,6 @@
     ```
 
     - 하지만 클로저가 접근을 공유하면 안 되는 변수에 대한 접근까지 부주의하게 공유할 수도 있다는 점을 기억해야 한다.
-
         ```jsx
         // 이 함수는 항상v를 반환하는 함수를 반환합니다.
         function constfunc(v) {
@@ -822,9 +814,7 @@
         // 인덱스 5의 함수는 5를 반환합니다.
         funcs[5](); // => 5
         ```
-
         - 이렇게 루프에서 클로저를 여러 개 생성하는 코드를 사용할 때, 흔히 루프를 클로저를 정의하는 함수 안으로 옮기는 실수를 하곤 한다.
-
             ```jsx
             // 0부터 9까지의 값을 반환하는 함수 배열을 반환
             function constfuncs() {
@@ -838,7 +828,6 @@
             let funcs = constfuncs();
             funcs[5](); // => 10; 왜 5가 아닐까요?
             ```
-
             - 위 코드처럼 클로저 10개를 생성하지만, 외부 변수 `i`를 모든 클로저가 공유하게 되어 반환된 배열 안의 클로저들이 모두 같은 10을 반환하게 되는 결과를 낳으며, 의도와 전혀 다른 결과를 낳았다.
                 - 위 문제는 변수를 `var`로 선언했기 때문이다.
                     - 변수 `i`는 루프 바디 안에만 존재 하는것이 아닌 함수 전체에 존재 하게 되어 클로저들이 이 변수를 공유하게 된것이다.
@@ -1091,4 +1080,127 @@
 
         ### 8.8.3 함수의 부분적용
 
-        1.
+        1. `bind()` 메서드는 왼쪽에 있는 인자를 부분적으로 적용한다.
+
+            - 즉, `bind()`에 전달하는 인자는 원래 함수에 전달되는 인자 리스트의 시작 부분에 위치한다는 뜻이다.
+            - 반대로 오른쪽에 있는 인자를 부분적으로 적용하는것도 가능하다.
+
+            ```jsx
+            // 이 함수의 인자는 왼쪽에 전달된다
+            function partialLeft(f, ...outerArgs) {
+                return function (...innerArgs) {
+                    let args = [...outerArgs, ...innerArgs];
+                    return f.apply(this, args);
+                };
+            }
+            // 이 함수의 인자는 오른쪽에 전달된다
+            function partialRight(f, ...outerArgs) {
+                return function (...innerArgs) {
+                    let args = [...innerArgs, ...outerArgs];
+                    return f.apply(this, args);
+                };
+            }
+
+            function partial(f, ...outerArgs) {
+                return function (...innerArgs) {
+                    let args = [...outerArgs];
+                    let innerIndex = 0;
+                    // 인자를 순회하며 정의되지 않은 값을 내부 인자로 채운다
+                    for (let i = 0; i < args.length; i++) {
+                        if (args[i] === undefined)
+                            args[i] = innerArgs[innerIndex++];
+                    }
+                    // 남은 내부 인자를 이어 붙인다
+                    args.push(...innerArgs.slice(innerIndex));
+                    return f.apply(this, args);
+                };
+            }
+            // 인자 세 개를 받는 함수
+            const f = function (x, y, z) {
+                return x * (y - z);
+            };
+            // 세 가지 부분 적용이 어떻게 다르게 동작하는지 보자
+            partialLeft(f, 2)(3, 4); // -2, 첫번째 인자에 결합 2 * (3-4)
+            partialRight(f, 2)(3, 4); // 6, 마지막 인자에 결합 3 * (4-2)
+            partial(f, undefined, 2)(3, 4); // -6, 중간 인자에 결합 3 * (2-4)
+            ```
+
+            - 부분 적용 함수를 사용하면 이미 정의한 함수를 사용해서 더 흥미로운 함수를 쉽게 정의할 수 있다.
+
+            ```jsx
+            const sum = (x, y) => x + y;
+            const increment = partialLeft(sum, 1);
+            const cuberoot = partialRight(Math.pow, 1 / 3);
+            cuberoot(increment(26)); // 3
+            ```
+
+            - 부분 적용과 고계 함수를 조합하면 더 흥미롭다.
+
+            ```jsx
+            function compose(f, g) {
+                return function (...args) {
+                    return f.call(this, g.apply(this, args));
+                };
+            }
+
+            const not = partialLeft(compose, (x) => !x);
+            const even = (x) => x % 2 === 0;
+            const odd = not(even);
+            const isNumber = not(isNaN);
+            odd(3) && isNumber(2); // true
+            ```
+
+            - 합성과 부분 적용을 사용해 평균과 표준 편차를 완전한 함수형 스타일로 개선할 수도 있다.
+
+            ```jsx
+            const sum = (x, y) => x + y;
+            const square = (x) => x * x;
+            const map = function (a, ...args) {
+                return a.map(...args);
+            };
+            const reduce = function (a, ...args) {
+                return a.reduce(...args);
+            };
+            const product = (x, y) => x * y;
+            const neg = partial(product, -1);
+            const sqrt = partial(Math.pow, undefined, 0.5);
+            const reciprocal = partial(Math.pow, undefined, neg(1));
+
+            //이제 평균과 표준 편차를 계산하다
+            let data = [1, 1, 3, 5, 5];
+            let mean = product(reduce(data, sum), reciprocal(data.length));
+            let stddev = sqrt(
+                product(
+                    reduce(
+                        map(data, compose(square, partial(sum, neg(mean)))),
+                        sum
+                    ),
+                    reciprocal(sum(data.length, neg(l)))
+                )
+            );
+            [mean, stddev]; // [3,2]
+            ```
+
+        ### 8.8.4 메모제이션
+
+        1. 함수를 인자로 받고 캐시를 활용하도록 수정해서 반환하는 고계함수
+
+            ```jsx
+            function memoize(f) {
+                const cache = new Map();
+
+                return function (...args) {
+                    let key = args.length + args.join("+");
+                    if (cache.has(key)) return cache.get(key);
+                    else {
+                        let result = f.apply(this, args);
+                        cache.set(key, result);
+                        return result;
+                    }
+                };
+            }
+            ```
+
+            - `memoize()`함수는 캐시로 사용할 새 객채를 생성하고 이 객체를 로컬 변수에 할당하므로, 반환된 함수 외에는 이 객체를 볼수 없다.
+            - 반환된 함수는 인자 배열을 문자열로 변환하고 그 문자열을 캐시 객체의 프로퍼티 이름으로 사용한다.
+            - 값이 캐시에 존재하면 바로 반환하고 그렇지 않다면 인자를 넘기면서 지정된 함수를 호출해 값을 계산하고 캐시에 저장한 다음 반환한다.
