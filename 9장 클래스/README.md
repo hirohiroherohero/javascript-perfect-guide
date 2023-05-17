@@ -1,3 +1,5 @@
+# 9장 클래스
+
 1. 자바스크립트 객체에 대해 설명하면서 객체는 프로퍼티의 고유한 집합이며 다른 어떤 객체와도 같지 않다고 했다.
 
     - 하지만 일부 프로퍼티를 공유하는 객체 클래스를 만드는 것이 유용할 때도 많다.
@@ -347,3 +349,439 @@
 
 1. `static` 키워드를 표준화하자는 내용 역시 제안되어 있다.
     - 공개 필드나 비공개 필드 선언 앞에 `static`을 추가하면 그 필드는 인스턴스 프로퍼티가 아니라 생성자 함수의 프로퍼티로 생성된다.
+
+## 9.4 기존 클래스에 메서드 추가
+
+1. 자바스크립트의 프로토타입 기반 상속 메커니즘은 동적이다.
+
+    - 객체는 자신의 프로토타입에서 프로퍼티를 상속하며, 설령 객체를 생성한 후에 프로토타입의 프로퍼티가 바뀌더라도 상속 관계는 끊어지지 않는다.
+    - 따라서 프로토타입 객체에 새 메서드를 추가하는 것만으로 자바스크립트 클래스를 확장할 수 있다.
+
+1. 자바크립트에 내장된 클래스의 프로토타입 객체에도 같은 일을 할 수 있다.
+
+    - 즉, 숫자와 문자열, 배열, 함수 등에 메서드를 추가할 수 있다.
+
+1. 하지만 나중에 자바스크립트 새 버전에서 같은 이름의 메서드를 정의할 경우 혼란을 주거나 호환성 문제를 야기할 수 있으므로, 이렇게 내장 타입의 프로토타입에 메서드를 추가하는 건 일반적으로 좋은 방법은 아니다.
+    - 특히 `Object.prototype`에 메서드를 추가하면 `for/in` 루프에 열거되기 때문에 더더욱 좋은 방법이 아니다.
+
+## 9.5 서브클래스
+
+1. 객체 지향 프로그래밍에서 클래스 B가 다른 클래스 A를 확장(`extend`)할 때 A는 슈퍼클래스, B는 서브클래스라고 부른다.
+    - B의 인스턴스는 A의 메서드를 상속한다.
+    - 클래스 B는 자신만의 메서드를 정의할 수 있고, 이 중 일부는 클래스 A에 있는 같은 이름의 메서드를 덮어 쓸 수 있다.
+        - B의 메서드가 A의 메서드를 덮어 쓰는 경우, B에 존재하는 덮어 쓰는 메서드가 A에 존재하는 덮어 쓰인 메서드를 호출해야 할 때가 많다.
+    - 마찬가지로 서브클래스 생성자 B()는 일반적으로 슈퍼클래스 생성자 A()를 호출해 그 인스턴스가 완전히 초기화 됐는지 확인한다.
+
+### 9.5.1 서브클래스와 프로토타입
+
+1. [예제 9-2의 Range 클래스](https://www.notion.so/9-5cd8e3b40b2c4448b9468969f7ce4b2c)의 서브클래스인 `Span`을 만들어 보자!
+
+    - `start`와 `span`으로 초기화
+    - `Span` 클래스의 인스턴스는 `Range` 슈퍼클래스의 인스턴스이기도 하다.
+    - `Span` 인스턴스는 `Span.prototype`에서 커스터마이징한 `toString()`메서드를 상속하지만, `Range`의 서브클래스이기도 하므로 `Range.prototype`에서 `includes()` 같은 메서드도 상속한다.
+
+    ```jsx
+    // 서브클래스에서 사용할 생성자 함수이다.
+    function Span(start, span) {
+        if (span >= 0) {
+            this.from = start;
+            this.to = start + span;
+        } else {
+            this.to = start;
+            this.from = start + span;
+        }
+    }
+
+    // Span 프로토타입은 Range 프로토타입을 상속한다.
+    Span.prototype = Object.create(Range.prototype);
+
+    // Range.prototype.constructor는 상속하지 않으므로 생성자 프로퍼티는 따로 정의한다.
+    Span.prototype.constructor = Span;
+
+    // Span은 toString() 메서드를 따로 정의하므로 Range의 toString()을 상속하지 않고 덮어쓴다.
+    Span.prototype.toString = function () {
+        return `(${this.from}... +${this.to - this.from})`;
+    };
+    ```
+
+1. `Span.prototype = Object.create(Range.prototype)`
+
+    - `Span()` 생성자로 생성된 객체를 `Span.prototype` 객체를 상속한다.
+        - `Span.prototype`은 `Range.prototype`을 상속하므로 `Span` 객체는 `Span.prototype`과 `Range.prototype`을 모두 상속한다.
+    - `Span()` 생성자는 `Range()` 생성자롸 마찬가지로 `from`과 `to`프로퍼티를 생성하므로 새 객체를 초기화하기 위해 `Range()` 생성자를 호출할 필요는 없다.
+
+1. 서브클래스 메커니즘을 빈틈없이 만들기 위해서는 클래스에서 슈퍼클래스에 메서드와 생성자를 호출할 수 있게 허용해야 하지만, ES5 이전의 자바스크립트에는 이를 단순하게 처리할 방법이 없었다.
+    - ES6에서는 `class` 문법에 `super` 키워드를 도입하여 이 문제를 해결했다.
+
+### 9.5.2 extends와 super를 사용하는 서브클래스
+
+1. ES6 이후에는 클래스 선언에 `extends` 절을 추가하기만 해도 서브클래스를 만들수 있으며 내장 클래스에도 이런 동작이 허용된다.
+
+    ```jsx
+    // 첫 번째와 마지막 요소에 게터를 추가하는 서브클래스
+    class EZArray extends Array {
+        get first() {
+            return this[0];
+        }
+        get last() {
+            return this[this.length - 1];
+        }
+    }
+
+    let a = new EZArray();
+    a instanceof EZArray; // true: a는 서브클래스의 인스턴스이다.
+    a instanceof Array; // true: a는 동시에 슈퍼클래스의 인스턴스이다.
+    a.push(1, 2, 3, 4); // a.length === 4: 상속된 메서드를 사용할 수 있다.
+    a.first; // 1: 서브클래스에서 정의한 첫 번째 요소 게터이다.
+    a.last; // 4: 서브클래스에서 정의한 마지막 요소 게터이다.
+    a[1]; // 2: 일반적인 배열 접근 문법도 동작한다.
+    Array.isArray(a); // true: 서브클래스 인스턴스도 배열이다.
+    EZArray.isArray(a); // true: 서브클래스는 정적 메서드 역시 상속한다.
+    ```
+
+    - `EZArray` 서브클래스는 두 가지 단순한 게터 메서드만 정의한다.
+
+        - `EZArray` 인스턴스는 일반적인 배열과 마찬가지로 동작하므로 `push(), pop(), length` 같은 메서드와 프로퍼티를 상속해 사용할 수 있다.
+        - 이 서브클래스에는 `first`와 `last` 게터도 만들었다.
+        - `Array.isArray` 같은 정적 메서드도 상속된다.
+
+        ```jsx
+        // EZArray.prototype이 Array.prototype을 상속하므로 인스턴스 메서드를 상속한다.
+        Array.prototype.isPrototypeOf(EZArray.prototype); // true
+
+        // EZArray가 Array를 상속하므로 EZArray는 배열의 정적 메서드와 프로퍼티 역시 상속한다.
+        Array.isPrototypeOf(EZArray); // true
+        ```
+
+2. 좀 더 발전한 예제
+
+    - 내장된 `Map` 클래스에 `TypedMap` 서브클래스를 만들어 `typeof`를 통해 키와 값이 지정된 타입인지 체크하는 기능을 추가.
+    - `super` 키워드를 사용해 생성자와 슈퍼클래스 메서드를 호출.
+
+    ```jsx
+    class TypedMap extends Map {
+        constructor(keyType, valueType, entries) {
+            // entries가 지정됐으면 타입을 체크한다.
+            if (entries) {
+                for (let [k, v] of entries) {
+                    if (typeof k !== keyType || typeof v !== valueType) {
+                        throw new TypeError(
+                            `Wrong type for entry [${k}, ${v}]`
+                        );
+                    }
+                }
+            }
+
+            // 타입을 체크한 entries로 슈퍼클래스를 초기화한다.
+            super(entries);
+
+            // 타입을 저장하면서 서브클래스를 초기화한다.
+            this.keyType = keyType;
+            this.valueType = valueType;
+        }
+
+        // 맵에 추가되는 새 항목마다 타입을 체크하도록 set() 메서드를 재정의한다.
+        set(key, value) {
+            // 키나 값이 지정된 타입이 아니라면 에러를 일으킨다.
+            if (this.keyType && typeof key !== this.keyType) {
+                throw new TypeError("~");
+            }
+            if (this.valueType && typeof value !== this.valueType) {
+                throw new TypeError("~");
+            }
+
+            // 타입이 정확하면 슈퍼클래스의 set() 메서드를 호출해서 맵에 항목을 추가한다.
+            // 그리고 슈퍼클래스 메서드가 반환하는 것을 그대로 반환한다.
+            return super.set(key, value);
+        }
+    }
+    ```
+
+    - `super`
+        - 생성자가 `super` 키워드를 함수 이름인 것처럼 사용해 슈퍼클래스 생성자를 호출한다.
+        - `Map()` 생성자는 `[key, value]` 배열로 구성된 이터러블 객체를 선택 사항인 인자로 받는다.
+            - `TypedMap()` 생성자의 선택 사항인 세번째 인자는 `Map()` 생성자의 첫 번째 인자가 되고 `super(entries)`로 슈퍼클래서 생성자에 전달된다.
+    - 생성자에서 `super()`를 사용할 때 알아야 할 중요한 규칙
+        - `extends` 키워드로 클래스를 정의하면 클래스 생성자는 슈퍼클래스 생성자를 호출할 때 반드시 `super()`를 사용해야한다.
+        - 서브클래스에 생성자를 정의하지 않으면 자동으로 생성된다.
+            - 이렇게 묵시적으로 정의된 생성자는 전달된 값을 그대로 `super()`에 전달한다.
+        - `super()`를 써서 슈퍼클래스 생성자를 호출하기 전에는 생성자 안에서 `this` 키워드를 사용하지 말아야 한다.
+            - 이 규칙을 따르면 서브클래스보다 슈퍼클래스를 먼저 초기화해야 한다는 규칙도 지킬 수 있다.
+        - `new` 키워드 없이 호출한 함수에서는 표현식 `new.target`의 값이 `undefined`이다.
+            - 반면 생성자 함수에서 `new.target`은 호출된 생성자를 참조한다.
+            - 서브클래스 생성자를 호출하고 `super()`로 슈퍼클래스 생성자를 호출하면, 슈퍼클래스 생성자는 `new.target`을 통해 서브클래스 생성자를 참조할 수 있다.
+    - `set()`
+        - `Map` 슈퍼클래스에는 맴에 새 항목을 추가하는 `set()`메서드가 있다.
+            - `TypedMap`의 `set()` 메서드가 슈퍼클래스의 `set()` 메서드를 덮어 쓴다
+        - 서브클래스의 `set()` 메서드는 맴에 키와 값을 추가하는 방법을 모르지만 슈퍼클래스의 `set()` 메서드가 할 수 있다.
+            - 따라서 `super` 키워드를 다시 사용해 슈퍼클래스의 메서드를 호출한다.
+        - 이 컨텍스트에서 `super`는 `this` 키워드처럼 슈퍼클래스를 참조하므로 슈퍼클래스에 정의된 메서드에 접근할 수 있다.
+    - `this`에 접근해 새 객체를 초기화하기 전에 생성자에서 먼저 슈퍼클래스 생성자를 호출해야 하지만, 메서드를 덮어 쓸 때는 그런 규칙이 적용되지 않는다.
+        - 슈퍼클래스 메서드를 덮어 쓰는 메서드가 슈퍼클래스 메서드를 호출할 필요는 없다.
+        - 덮어 쓰는 메서드의 어디에서든 `super`를 사용해 덮어 쓰인 메서드나 기타 슈퍼클래스 메서드를 호출할 수 있다.
+
+### 9.5.3 위임과 상속
+
+1. 다른 클래스의 동작을 공유하는 클래스를 원한다면 서브클래스를 만들어 동작을 상속할 수도 있지만, 클래스에서 다른 클래스의 인스턴스를 만들고 그 인스턴스에 우리가 원하는 동작을 위임하는 것이 더 쉽고 유연한 방법일 때도 많다.
+
+    - 다른 클래스의 래퍼를 만들거나 합성을 통해서도 새 클래스를 만들 수 있다.
+    - 동작을 위임하는 방식을 ‘합성’이라 부르며 객체 지향 프로그래밍에는 ‘상속보다 합성을 우선하라’ 라는 격언이 자주 인용된다.
+
+1. 예제 (`Histogram` 클래스)
+
+    - 자바스크립트의 `Set`클래스와 비슷하지만, 세트에 어떤 값이 있는지 그치지 않고 각 값이 몇번 추가 됐는지도 추적하려고 함.
+    - `count()` 메서드는 값과 그 값이 추가된 횟수를 연결해야 하므로 세트보다는 맵에 더 가까움.
+        - 따라서 세트와 서브클래스를 만들기 보단 내장된 `Map` 객체에 실행을 위임하는 `API`를 가진 클래스를 만드는게 더 좋음.
+
+    ```jsx
+    /**
+     * 세트와 비슷하지만 추가되는 값마다 몇 번 추가됐는지 추척하는 클래스이다.
+     * 세트와 마찬가지로 add()와 remove() 메서드가 있고,
+     * count() 메서드는 주어진 값이 몇 번 추가됐는지 반환한다.
+     * 기본 이터레이터는 최소 한 번 이상 추가된 값을 전달(yield)한다.
+     * [value, count] 쌍을 순회할 때는 entries()를 사용한다.
+     */
+    class Histogram {
+        // 위임할 Map객체를 만든다.
+        constructor() {
+            this.map = new Map();
+        }
+
+        // 키가 추가된 횟수는 맵에 존재하며, 맵에 없으면 0이다.
+        count(key) {
+            return this.map.get(key) || 0;
+        }
+
+        // 세트 비슷한 메서드 has()는 count가 0이 아닌 값이면 true를 반환한다.
+        has(key) {
+            return this.count(key) > 0;
+        }
+
+        // 히스토그램 크기는 맵에 있는 항목 수와 같다.
+        get size() {
+            return this.map.size;
+        }
+
+        // 키를 추가하면 맵에서 count를 증가시킨다.
+        add(key) {
+            this.map.set(key, this.count(key) + 1);
+        }
+
+        // 키 삭제는 맵의 count가 0일 때만 키를 삭제한다.
+        delete(key) {
+            let count = this.count(key);
+            if (count === 0) {
+                this.map.delete(key);
+            } else if (count > 1) {
+                this.map.set(key, count - 1);
+            }
+        }
+
+        // 히스토그램을 순회하면 저장된 키만 반환한다.
+        [Symbol.iterator]() {
+            return this.map.key();
+        }
+
+        // 나머지 이터레이터 메서드는 Map 객체에 위임한다.
+        keys() {
+            return this.map.keys();
+        }
+        values() {
+            return this.map.values();
+        }
+        entries() {
+            return this.map.entries();
+        }
+    }
+    ```
+
+    - `Histogram()` 생성자는 모두 `Map` 객체를 만든다.
+        - 대부분의 메서드는 맵의 메서드에 동작을 위임하므로 간단히 구현할 수 있다.
+    - 상속이 아니라 위임을 사용했으므로 `Histogram` 객체는 세트나 맵의 인스턴스가 아니다.
+
+### 9.5.4 클래스 계층 구조와 추상 클래스
+
+1. 서로 연관된 서브클래스 그룹에서 슈퍼클래스 구실을 하는 추상 클래스 예제를 만들자
+
+    - 추상클래스란 완전히 구현되지 않은 클래스를 의미한다.
+        - 추상 슈퍼클래스에서 정의하는 부분 구현을 서브클래스 전체가 상속하고 공유할 수 있다.
+    - 서브클래스는 슈퍼클래스가 구현하지않고 정의한 추상 메서드를 구현하여 자신만의 고유한 동작을 정의할 수 있다.
+
+    ```jsx
+    class AbstractSet {
+        has(x) {
+            throw new Error("Abstract method");
+        }
+    }
+
+    class NotSet extends AbstractSet {
+        constructor(set) {
+            super();
+            this.set = set;
+        }
+
+        has(x) {
+            return !this.set.has(x);
+        }
+        toString() {
+            return `{ x| x ∉ ${this.set.toString()} }`;
+        }
+    }
+
+    class RangeSet extends AbstractSet {
+        constructor(from, to) {
+            super();
+            this.from = from;
+            this.to = to;
+        }
+
+        has(x) {
+            return x >= this.from && x <= this.to;
+        }
+        toString() {
+            return `{ x| ${this.from} ≤ x ≤ ${this.to} }`;
+        }
+    }
+
+    class AbstractEnumerableSet extends AbstractSet {
+        get size() {
+            throw new Error("Abstract method");
+        }
+        [Symbol.iterator]() {
+            throw new Error("Abstract method");
+        }
+
+        isEmpty() {
+            return this.size === 0;
+        }
+        toString() {
+            return `{${Array.from(this).join(", ")}}`;
+        }
+        equals(set) {
+            if (!(set instanceof AbstractEnumerableSet)) return false;
+
+            if (this.size !== set.size) return false;
+
+            for (let element of this) {
+                if (!set.has(element)) return false;
+            }
+
+            return true;
+        }
+    }
+
+    class SingletonSet extends AbstractEnumerableSet {
+        constructor(member) {
+            super();
+            this.member = member;
+        }
+
+        has(x) {
+            return x === this.member;
+        }
+        get size() {
+            return 1;
+        }
+        *[Symbol.iterator]() {
+            yield this.member;
+        }
+    }
+
+    class AbstractWritableSet extends AbstractEnumerableSet {
+        insert(x) {
+            throw new Error("Abstract method");
+        }
+        remove(x) {
+            throw new Error("Abstract method");
+        }
+
+        add(set) {
+            for (let element of set) {
+                this.insert(element);
+            }
+        }
+
+        subtract(set) {
+            for (let element of set) {
+                this.remove(element);
+            }
+        }
+
+        intersect(set) {
+            for (let element of this) {
+                if (!set.has(element)) {
+                    this.remove(element);
+                }
+            }
+        }
+    }
+
+    class BitSet extends AbstractWritableSet {
+        constructor(max) {
+            super();
+            this.max = max;
+            this.n = 0;
+            this.numBytes = Math.floor(max / 8) + 1;
+            this.data = new Uint8Array(this.numBytes);
+        }
+
+        _valid(x) {
+            return Number.isInteger(x) && x >= 0 && x <= this.max;
+        }
+
+        _has(byte, bit) {
+            return (this.data[byte] & BitSet.bits[bit]) !== 0;
+        }
+
+        has(x) {
+            if (this._valid(x)) {
+                let byte = Math.floor(x / 8);
+                let bit = x % 8;
+                return this._has(byte, bit);
+            } else {
+                return false;
+            }
+        }
+
+        insert(x) {
+            if (this._valid(x)) {
+                let byte = Math.floor(x / 8);
+                let bit = x % 8;
+                if (!this._has(byte, bit)) {
+                    this.data[byte] |= BitSet.bits[bit];
+                    this.n++;
+                }
+            } else {
+                throw new TypeError("Invalid set element: " + x);
+            }
+        }
+
+        remove(x) {
+            if (this._valid(x)) {
+                let byte = Math.floor(x / 8);
+                let bit = x % 8;
+                if (this._has(byte, bit)) {
+                    this.data[byte] &= BitSet.masks[bit];
+                    this.n--;
+                }
+            } else {
+                throw new TypeError("Invalid set element: " + x);
+            }
+        }
+
+        get size() {
+            return this.n;
+        }
+
+        *[Symbol.iterator]() {
+            for (let i = 0; i <= this.max; i++) {
+                if (this.has(i)) {
+                    yield i;
+                }
+            }
+        }
+    }
+
+    BitSet.bits = new Uint8Array([1, 2, 4, 8, 16, 32, 64, 128]);
+    BitSet.masks = new Uint8Array([~1, ~2, ~4, ~8, ~16, ~32, ~64, ~128]);
+    ```
